@@ -13,6 +13,11 @@ import {
 import { Form, LocationAutocompleteInputField, Button, FieldTextInput } from '../../components';
 
 import css from './EditListingLocationForm.module.css';
+import Map from '../../components/Map/Map';
+import { types as sdkTypes } from '../../util/sdkLoader';
+import { object } from 'prop-types';
+
+const { LatLng } = sdkTypes;
 
 const identity = v => v;
 
@@ -76,6 +81,24 @@ export const EditListingLocationFormComponent = props => (
       const submitInProgress = updateInProgress;
       const submitDisabled = invalid || disabled || submitInProgress;
 
+      if (values.location && values.location.selectedPlace && values.location.selectedPlace.origin && values.location.selectedPlace.origin.lat && values.location.selectedPlace.origin.lng) {
+        const obj = {
+          center: new LatLng(values.location.selectedPlace.origin.lat, values.location.selectedPlace.origin.lng),
+          obfuscatedCenter: new LatLng(values.location.selectedPlace.origin.lat, values.location.selectedPlace.origin.lng),
+          address: 'Sharetribe',
+          zoom: 10,
+          addressOnMarker: (address) => {
+            if (address && Object.keys(address).length && address.predictions) {
+              values.location.search = address.predictions[0].place_name;
+              values.location.selectedPlace.address = address.predictions[0].place_name;
+              values.location.selectedPlace.origin.lat = address.search[1];
+              values.location.selectedPlace.origin.lng = address.search[0];
+            }            
+          }
+        };
+        props = { ...props, ...obj };
+      }
+      
       return (
         <Form className={classes} onSubmit={handleSubmit}>
           {errorMessage}
@@ -107,6 +130,10 @@ export const EditListingLocationFormComponent = props => (
             label={buildingMessage}
             placeholder={buildingPlaceholderMessage}
           />
+
+          <div style={{ height: 400 }}>
+            <Map {...props} />
+          </div>
 
           <Button
             className={css.submitButton}

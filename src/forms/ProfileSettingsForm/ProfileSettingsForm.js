@@ -97,6 +97,14 @@ class ProfileSettingsFormComponent extends Component {
             id: 'ProfileSettingsForm.bioPlaceholder',
           });
 
+          // Facebook
+          const fbLabel = intl.formatMessage({
+            id: 'ProfileSettingsForm.fbLabel',
+          });
+          const fbPlaceholder = intl.formatMessage({
+            id: 'ProfileSettingsForm.fbPlaceholder',
+          });
+
           const uploadingOverlay =
             uploadInProgress || this.state.uploadDelay ? (
               <div className={css.uploadingImageOverlay}>
@@ -276,6 +284,18 @@ class ProfileSettingsFormComponent extends Component {
                     validate={lastNameRequired}
                   />
                 </div>
+              </div>
+              <div className={classNames(css.sectionContainer)}>
+                <h3 className={css.sectionTitle}>
+                  <FormattedMessage id="ProfileSettingsForm.fbHeading" />
+                </h3>
+                <FieldTextInput
+                  type="textarea"
+                  id="fb"
+                  name="fb"
+                  label={fbLabel}
+                  placeholder={fbPlaceholder}
+                />
               </div>
               <div className={classNames(css.sectionContainer, css.lastSection)}>
                 <h3 className={css.sectionTitle}>

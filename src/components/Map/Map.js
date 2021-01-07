@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { bool, number, object, string } from 'prop-types';
+import { bool, func, number, object, string } from 'prop-types';
 import classNames from 'classnames';
 import { propTypes } from '../../util/types';
 import config from '../../config';
@@ -15,6 +15,7 @@ export class Map extends Component {
       rootClassName,
       mapRootClassName,
       address,
+      addressOnMarker,
       center,
       obfuscatedCenter,
       zoom,
@@ -46,6 +47,7 @@ export class Map extends Component {
         center={location}
         zoom={zoom}
         address={address}
+        addressOnMarker={addressOnMarker}
         mapsConfig={mapsConfig}
       />
     );
@@ -71,6 +73,7 @@ Map.propTypes = {
   obfuscatedCenter: propTypes.latlng,
   zoom: number,
   mapsConfig: object,
+  addressOnMarker: func,
   useStaticMap: bool,
 };
 

@@ -8,6 +8,8 @@ import MultiTouch from 'mapbox-gl-multitouch';
 import uniqueId from 'lodash/uniqueId';
 import { circlePolyline } from '../../util/maps';
 import config from '../../config';
+import { types as sdkTypes } from '../../util/sdkLoader';
+const { LatLng: SDKLatLng, LatLngBounds: SDKLatLngBounds } = sdkTypes;
 
 const mapMarker = mapsConfig => {
   const { enabled, url, width, height } = mapsConfig.customMarker;
@@ -18,7 +20,7 @@ const mapMarker = mapsConfig => {
     element.style.height = `${height}px`;
     return new window.mapboxgl.Marker({ element });
   } else {
-    return new window.mapboxgl.Marker();
+    return new window.mapboxgl.Marker({ draggable: true });
   }
 };
 
@@ -48,14 +50,44 @@ const generateFuzzyLayerId = () => {
   return uniqueId('fuzzy_layer_');
 };
 
+const getClient = () => {
+  const libLoaded = typeof window !== 'undefined' && window.mapboxgl && window.mapboxSdk;
+  if (!libLoaded) {
+    throw new Error('Mapbox libraries are required for DynamicMapboxMap');
+  }
+  return window.mapboxSdk({
+    accessToken: window.mapboxgl.accessToken,
+  });
+}
+
+const getPlacePredictions = (search) => {
+  const limitCountriesMaybe = config.maps.search.countryLimit
+    ? { countries: config.maps.search.countryLimit }
+    : {};
+
+  return getClient()
+    .geocoding.reverseGeocode({
+      query: search,
+      ...limitCountriesMaybe,
+      language: [config.locale],
+    })
+    .send()
+    .then(response => {
+      return {
+        search,
+        predictions: response.body.features,
+      };
+    });
+}
 class DynamicMapboxMap extends Component {
   constructor(props) {
     super(props);
 
     this.mapContainer = null;
-    this.map = null;
+    this.map = typeof window !== 'undefined' && window.mapboxMap ? window.mapboxMap : null;
     this.centerMarker = null;
     this.fuzzyLayerId = generateFuzzyLayerId();
+    this.addressByMarker = this.addressByMarker.bind(this);
 
     this.updateFuzzyCirclelayer = this.updateFuzzyCirclelayer.bind(this);
   }
@@ -80,6 +112,8 @@ class DynamicMapboxMap extends Component {
     } else {
       this.centerMarker = mapMarker(mapsConfig);
       this.centerMarker.setLngLat(position).addTo(this.map);
+      // listen to the marker dragend event
+      this.centerMarker.on('dragend', this.addressByMarker);      
     }
   }
   componentWillUnmount() {
@@ -138,6 +172,17 @@ class DynamicMapboxMap extends Component {
     this.map.addLayer(circleLayer(center, mapsConfig, this.fuzzyLayerId));
 
     this.map.setCenter(position);
+  }
+  addressByMarker(e) {
+    if (this.map && this.centerMarker) {
+        const data = this.centerMarker.getLngLat();
+        if (data && Object.keys(data).length) {
+          const search = [data.lng, data.lat];
+          getPlacePredictions(search).then((res)=> {
+            this.props.addressOnMarker(res);
+          });
+        }
+    }
   }
   render() {
     const { containerClassName, mapClassName } = this.props;
